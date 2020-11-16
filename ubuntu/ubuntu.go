@@ -1,6 +1,4 @@
-// Package pastebin wraps the basic functions of the Pastebin API and exposes a
-// Go API.
-package pastebin
+package ubuntu
 
 import (
 	"errors"
@@ -11,10 +9,8 @@ import (
 	"strings"
 )
 
-const (
-	Name    = "pastebin.com"
-	baseURL = "https://pastebin.com/"
-)
+const baseURL = "https://paste.ubuntu.com"
+const Name = "paste.ubuntu.com"
 
 var (
 	// ErrPutFailed is returned when a paste could not be uploaded to pastebin.
@@ -40,31 +36,28 @@ func New(cfg *Config) *Pastebin {
 func (p *Pastebin) Put(text, title string) (id string, err error) {
 	data := url.Values{}
 	// Required values.
-	data.Set("api_dev_key", p.config.APIDevKey)
-	data.Set("api_option", "paste") // Create a paste.
-	data.Set("api_paste_code", text)
+	data.Set("poster", p.config.Poster)
+	data.Set("syntax", p.config.Syntax)
+	data.Set("expiration", p.config.Expiration)
+	data.Set("content", text)
 	// Optional values.
-	data.Set("api_paste_name", title)                                          // The paste should have title "title".
-	data.Set("api_paste_private", fmt.Sprintf("%d", p.config.APIPastePrivate)) // Create a public paste.
-	data.Set("api_paste_expire_date", "N")                                     // The paste should never expire.
 
-	resp, err := http.PostForm(baseURL+"api/api_post.php", data)
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse // or maybe the error from the request
+		},
+	}
+
+	resp, err := client.PostForm(baseURL, data)
 	if err != nil {
 		return "", err
 	}
 
-	defer resp.Body.Close()
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
+	if resp.StatusCode == 302 {
+		return resp.Header.Get("Location"), nil
 	}
 
-	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("%w: %s", ErrPutFailed, string(respBody))
-	}
-
-	return p.StripURL(string(respBody)), nil
+	return "", ErrPutFailed
 }
 
 // Get returns the text inside the paste identified by ID.
@@ -95,5 +88,5 @@ func (p *Pastebin) StripURL(url string) string {
 
 // WrapID returns the pastebin URL from a paste ID.
 func (p *Pastebin) WrapID(id string) string {
-	return "http://pastebin.com/" + id
+	return baseURL + id
 }

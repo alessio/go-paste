@@ -6,19 +6,32 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/go-ini/ini"
 	"github.com/urfave/cli/v2"
 
 	"github.com/bearbin/go-paste/fpaste"
 	"github.com/bearbin/go-paste/pastebin"
+	"github.com/bearbin/go-paste/ubuntu"
 )
 
 var errUnknownService = errors.New("unknown paste service")
+var iniFile *ini.File
+var iniFilename = "paste.ini"
+
+func loadConfig() {
+	var err error
+
+	iniFile, err = ini.Load(iniFilename)
+	if err != nil {
+		iniFile = ini.Empty()
+	}
+}
 
 func main() {
 	app := cli.NewApp()
 	app.Usage = "get and put pastes from pastebin and other paste sites."
 	app.Flags = []cli.Flag{
-		&cli.StringFlag{Name: "service, s", Value: "pastebin", Usage: "the pastebin service to use"},
+		&cli.StringFlag{Name: "service, s", Value: "ubuntu", Usage: "the pastebin service to use"},
 	}
 	app.Commands = []*cli.Command{
 		{
@@ -70,15 +83,17 @@ func main() {
 			Action: func(c *cli.Context) error {
 				srv, err := convertService(c.String("service"))
 				if err != nil {
-					println("ERROR:", err.Error())
+					fmt.Fprintf(app.ErrWriter, "ERROR: %v\n", err.Error())
 					os.Exit(1)
 				}
+
 				var id string
 				if c.Bool("id") {
 					id = c.Args().First()
 				} else {
 					id = srv.StripURL(c.Args().First())
 				}
+
 				text, err := srv.Get(id)
 				if err != nil {
 					return err
@@ -99,11 +114,30 @@ func main() {
 }
 
 func convertService(srv string) (service, error) {
+	loadConfig()
+
 	switch {
 	case srv == "pastebin" || srv == "pastebin.com" || srv == "http://pastebin.com":
-		return pastebin.Pastebin{}, nil
+		pastebinConfig := pastebin.DefaultConfig()
+		cfgFileSection := iniFile.Section(pastebin.Name)
+
+		if err := cfgFileSection.MapTo(pastebinConfig); err != nil {
+			panic(err)
+		}
+
+		return pastebin.New(pastebinConfig), nil
 	case srv == "fpaste" || srv == "fpaste.org" || srv == "http://fpaste.org":
 		return fpaste.Fpaste{}, nil
+	case srv == "ubuntu" || srv == "paste.ubuntu.com":
+		pastebinConfig := ubuntu.DefaultConfig()
+		cfgFileSection := iniFile.Section(pastebin.Name)
+
+		if err := cfgFileSection.MapTo(pastebinConfig); err != nil {
+			panic(err)
+		}
+
+		return ubuntu.New(pastebinConfig), nil
 	}
+
 	return nil, errUnknownService
 }
