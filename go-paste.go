@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/go-ini/ini"
 	"github.com/urfave/cli/v2"
@@ -13,18 +14,14 @@ import (
 	"github.com/bearbin/go-paste/ubuntu"
 )
 
-var errUnknownService = errors.New("unknown paste service")
-var iniFile *ini.File
-var iniFilename = "paste.ini"
+const (
+	iniFilename = ".paste.ini"
+)
 
-func loadConfig() {
-	var err error
-
-	iniFile, err = ini.Load(iniFilename)
-	if err != nil {
-		iniFile = ini.Empty()
-	}
-}
+var (
+	errUnknownService = errors.New("unknown paste service")
+	iniFile           *ini.File
+)
 
 func main() {
 	app := cli.NewApp()
@@ -112,28 +109,42 @@ func main() {
 	}
 }
 
+func loadConfig() {
+	var err error
+
+	userHome, _ := os.UserHomeDir() // discard error, file won't be loaded if homedir is not defined
+	iniFile, err = ini.LooseLoad(filepath.Join(userHome, iniFilename), iniFilename)
+
+	if err != nil {
+		iniFile = ini.Empty()
+	}
+}
+
+type config struct {
+	Pastebin *pastebin.Config `ini:"pastebin.com"`
+	Ubuntu   *ubuntu.Config   `ini:"paste.ubuntu.com"`
+}
+
+func defaultConfig() *config {
+	return &config{
+		Pastebin: pastebin.DefaultConfig(),
+		Ubuntu:   ubuntu.DefaultConfig(),
+	}
+}
+
 func convertService(srv string) (service, error) {
 	loadConfig()
 
+	cfg := defaultConfig()
+	if err := iniFile.MapTo(cfg); err != nil {
+		panic(err)
+	}
+
 	switch {
 	case srv == "pastebin" || srv == "pastebin.com" || srv == "http://pastebin.com":
-		pastebinConfig := pastebin.DefaultConfig()
-		cfgFileSection := iniFile.Section(pastebin.Name)
-
-		if err := cfgFileSection.MapTo(pastebinConfig); err != nil {
-			panic(err)
-		}
-
-		return pastebin.New(pastebinConfig), nil
+		return pastebin.New(cfg.Pastebin), nil
 	case srv == "ubuntu" || srv == "paste.ubuntu.com":
-		pastebinConfig := ubuntu.DefaultConfig()
-		cfgFileSection := iniFile.Section(pastebin.Name)
-
-		if err := cfgFileSection.MapTo(pastebinConfig); err != nil {
-			panic(err)
-		}
-
-		return ubuntu.New(pastebinConfig), nil
+		return ubuntu.New(cfg.Ubuntu), nil
 	}
 
 	return nil, errUnknownService
