@@ -9,7 +9,6 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/urfave/cli/v2"
 
-	"github.com/bearbin/go-paste/fpaste"
 	"github.com/bearbin/go-paste/pastebin"
 	"github.com/bearbin/go-paste/ubuntu"
 )
@@ -126,8 +125,6 @@ func convertService(srv string) (service, error) {
 		}
 
 		return pastebin.New(pastebinConfig), nil
-	case srv == "fpaste" || srv == "fpaste.org" || srv == "http://fpaste.org":
-		return fpaste.Fpaste{}, nil
 	case srv == "ubuntu" || srv == "paste.ubuntu.com":
 		pastebinConfig := ubuntu.DefaultConfig()
 		cfgFileSection := iniFile.Section(pastebin.Name)
