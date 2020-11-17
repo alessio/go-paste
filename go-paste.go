@@ -10,6 +10,7 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/urfave/cli/v2"
 
+	"github.com/bearbin/go-paste/debian"
 	"github.com/bearbin/go-paste/pastebin"
 	"github.com/bearbin/go-paste/ubuntu"
 )
@@ -123,12 +124,14 @@ func loadConfig() {
 type config struct {
 	Pastebin *pastebin.Config `ini:"pastebin.com"`
 	Ubuntu   *ubuntu.Config   `ini:"paste.ubuntu.com"`
+	Debian   *debian.Config   `ini:"paste.debian.net"`
 }
 
 func defaultConfig() *config {
 	return &config{
 		Pastebin: pastebin.DefaultConfig(),
 		Ubuntu:   ubuntu.DefaultConfig(),
+		Debian:   debian.DefaultConfig(),
 	}
 }
 
@@ -141,11 +144,23 @@ func convertService(srv string) (service, error) {
 	}
 
 	switch {
-	case srv == "pastebin" || srv == "pastebin.com" || srv == "http://pastebin.com":
+	case findString(srv, "pastebin", "pastebin.com", "http://pastebin.com", "https://pastebin.com") != -1:
 		return pastebin.New(cfg.Pastebin), nil
-	case srv == "ubuntu" || srv == "paste.ubuntu.com":
+	case findString(srv, "ubuntu", "paste.ubuntu.com", "http://paste.ubuntu.com", "https://paste.ubuntu.com") != -1:
 		return ubuntu.New(cfg.Ubuntu), nil
+	case findString(srv, "debian", "paste.debian.net", "http://paste.debian.net", "https://paste.debian.net") != -1:
+		return debian.New(cfg.Debian), nil
 	}
 
 	return nil, errUnknownService
+}
+
+func findString(s string, arg ...string) int {
+	for index, cur := range arg {
+		if cur == s {
+			return index
+		}
+	}
+
+	return -1
 }
