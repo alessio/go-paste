@@ -10,9 +10,9 @@ import (
 	"github.com/go-ini/ini"
 	"github.com/urfave/cli/v2"
 
-	"github.com/bearbin/go-paste/debian"
-	"github.com/bearbin/go-paste/pastebin"
-	"github.com/bearbin/go-paste/ubuntu"
+	"github.com/bearbin/go-paste/internal/services/debian"
+	"github.com/bearbin/go-paste/internal/services/pastebin"
+	"github.com/bearbin/go-paste/internal/services/ubuntu"
 )
 
 const (

@@ -1,22 +1,16 @@
-package ubuntu
+package debian
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	pasteErrors "github.com/bearbin/go-paste/internal/errors"
 )
 
-const baseURL = "https://paste.ubuntu.com"
-
-var (
-	// ErrPutFailed is returned when a paste could not be uploaded to pastebin.
-	ErrPutFailed = errors.New("pastebin put failed")
-	// ErrGetFailed is returned when a paste could not be fetched from pastebin.
-	ErrGetFailed = errors.New("pastebin get failed")
-)
+const baseURL = "https://paste.debian.net/"
 
 // Pastebin represents an instance of the pastebin service.
 type Pastebin struct {
@@ -36,10 +30,9 @@ func (p *Pastebin) Put(text, title string) (id string, err error) {
 	data := url.Values{}
 	// Required values.
 	data.Set("poster", p.config.Poster)
-	data.Set("syntax", p.config.Syntax)
-	data.Set("expiration", p.config.Expiration)
-	data.Set("content", text)
-	// Optional values.
+	data.Set("lang", "-1")
+	data.Set("expire", "-1")
+	data.Set("code", text)
 
 	client := http.Client{
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
@@ -56,7 +49,7 @@ func (p *Pastebin) Put(text, title string) (id string, err error) {
 		return resp.Header.Get("Location"), nil
 	}
 
-	return "", ErrPutFailed
+	return "", pasteErrors.ErrPutFailed
 }
 
 // Get returns the text inside the paste identified by ID.
@@ -74,7 +67,7 @@ func (p *Pastebin) Get(id string) (text string, err error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("%w: %s", ErrGetFailed, string(respBody))
+		return "", fmt.Errorf("%w: %s", pasteErrors.ErrGetFailed, string(respBody))
 	}
 
 	return string(respBody), nil

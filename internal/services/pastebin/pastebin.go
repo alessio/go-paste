@@ -3,22 +3,16 @@
 package pastebin
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"strings"
+
+	pasteErrors "github.com/bearbin/go-paste/internal/errors"
 )
 
 const baseURL = "https://pastebin.com/"
-
-var (
-	// ErrPutFailed is returned when a paste could not be uploaded to pastebin.
-	ErrPutFailed = errors.New("pastebin put failed")
-	// ErrGetFailed is returned when a paste could not be fetched from pastebin.
-	ErrGetFailed = errors.New("pastebin get failed")
-)
 
 // Pastebin represents an instance of the pastebin service.
 type Pastebin struct {
@@ -58,7 +52,7 @@ func (p *Pastebin) Put(text, title string) (id string, err error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("%w: %s", ErrPutFailed, string(respBody))
+		return "", fmt.Errorf("%w: %s", pasteErrors.ErrPutFailed, string(respBody))
 	}
 
 	return p.StripURL(string(respBody)), nil
@@ -79,7 +73,7 @@ func (p *Pastebin) Get(id string) (text string, err error) {
 	}
 
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("%w: %s", ErrGetFailed, string(respBody))
+		return "", fmt.Errorf("%w: %s", pasteErrors.ErrGetFailed, string(respBody))
 	}
 
 	return string(respBody), nil
