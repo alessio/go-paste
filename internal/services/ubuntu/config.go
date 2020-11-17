@@ -1,6 +1,7 @@
 package ubuntu
 
 import (
+	"net/url"
 	"os/user"
 )
 
@@ -12,6 +13,16 @@ type Config struct {
 
 func DefaultConfig() *Config {
 	return &Config{Poster: defaultPoster(), Syntax: "text"}
+}
+
+func (config *Config) FormValues() url.Values {
+	data := url.Values{}
+
+	data.Set("poster", config.Poster)
+	data.Set("syntax", config.Syntax)
+	data.Set("expiration", config.Expiration)
+
+	return data
 }
 
 func defaultPoster() string {

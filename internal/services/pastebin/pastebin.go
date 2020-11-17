@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	pasteErrors "github.com/bearbin/go-paste/internal/errors"
@@ -29,15 +28,9 @@ func New(cfg *Config) *Pastebin {
 
 // Put uploads text to Pastebin with optional title returning the ID or an error.
 func (p *Pastebin) Put(text, title string) (id string, err error) {
-	data := url.Values{}
-	// Required values.
-	data.Set("api_dev_key", p.config.APIDevKey)
-	data.Set("api_option", "paste") // Create a paste.
+	data := p.config.FormValues()
 	data.Set("api_paste_code", text)
-	// Optional values.
-	data.Set("api_paste_name", title)                                          // The paste should have title "title".
-	data.Set("api_paste_private", fmt.Sprintf("%d", p.config.APIPastePrivate)) // Create a public paste.
-	data.Set("api_paste_expire_date", "N")                                     // The paste should never expire.
+	data.Set("api_paste_name", title)
 
 	resp, err := http.PostForm(baseURL+"api/api_post.php", data)
 	if err != nil {

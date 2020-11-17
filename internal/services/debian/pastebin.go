@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 
 	pasteErrors "github.com/bearbin/go-paste/internal/errors"
@@ -27,11 +26,7 @@ func New(cfg *Config) *Pastebin {
 
 // Put uploads text to Pastebin with optional title returning the ID or an error.
 func (p *Pastebin) Put(text, title string) (id string, err error) {
-	data := url.Values{}
-	// Required values.
-	data.Set("poster", p.config.Poster)
-	data.Set("lang", "-1")
-	data.Set("expire", "-1")
+	data := p.config.FormValues()
 	data.Set("code", text)
 
 	client := http.Client{
