@@ -11,10 +11,7 @@ import (
 	"strings"
 )
 
-const (
-	Name    = "pastebin.com"
-	baseURL = "https://pastebin.com/"
-)
+const baseURL = "https://pastebin.com/"
 
 var (
 	// ErrPutFailed is returned when a paste could not be uploaded to pastebin.

@@ -10,7 +10,6 @@ import (
 )
 
 const baseURL = "https://paste.debian.net/"
-const Name = "paste.debian.net"
 
 var (
 	// ErrPutFailed is returned when a paste could not be uploaded to pastebin.
